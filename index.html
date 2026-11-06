@@ -121,9 +121,6 @@
           </div>
 
           <div class="quick-locations">
-            <button class="quick-loc-chip chip-game" id="mapOpenGameBtn" title="Сыграть в раннер: убеги от пса!">
-              🕹️ Игра: Побег по пляжу
-            </button>
             <button class="quick-loc-chip chip-base" data-id="santiago_base">
               🏰 Santiago, El Quisco 3260
             </button>
@@ -138,6 +135,16 @@
             </button>
           </div>
         </div>
+
+        <!-- Floating Bright Arcade Game Button -->
+        <button class="map-floating-game-btn" id="mapFloatingGameBtn" title="Сыграть в аркадный раннер: побег от псины!">
+          <span class="game-btn-icon">🎮</span>
+          <span class="game-btn-text">
+            <strong>ИГРАТЬ: ПОБЕГ ОТ ПСИНЫ</strong>
+            <small>Помоги Димасу спасти штаны</small>
+          </span>
+          <span class="game-btn-badge">СТАРТ 🔥</span>
+        </button>
 
         <!-- Dimas Health Bar (Joke) -->
         <div class="dimas-status-bar">
@@ -162,13 +169,17 @@
             <span class="tab-icon">📋</span>
             <span class="tab-label">Хроника</span>
           </button>
-          <button id="mobileFitAllBtn" class="mobile-tab-btn" title="Показать всю карту">
-            <span class="tab-icon">🗺️</span>
-            <span class="tab-label">Вся карта</span>
+          <button id="mobileGameBtn" class="mobile-tab-btn text-game-tab" title="Мини-игра: Побег от псины">
+            <span class="tab-icon">🎮</span>
+            <span class="tab-label">Игра</span>
           </button>
           <button id="mobileAddBiteBtn" class="mobile-tab-btn text-danger-tab" title="Сообщить об укусе">
             <span class="tab-icon">🚨</span>
             <span class="tab-label">+ Укус</span>
+          </button>
+          <button id="mobileFitAllBtn" class="mobile-tab-btn" title="Показать всю карту">
+            <span class="tab-icon">🗺️</span>
+            <span class="tab-label">Вся карта</span>
           </button>
           <button id="mobileSoundBtn" class="mobile-tab-btn" title="Переключить звук">
             <span class="tab-icon" id="mobileSoundIcon">🔊</span>

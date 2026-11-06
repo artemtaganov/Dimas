@@ -1407,7 +1407,8 @@ function initMiniGame() {
   beachGame = new BeachRunner(canvas);
 
   const openBtn = document.getElementById('openGameBtn');
-  const mapOpenBtn = document.getElementById('mapOpenGameBtn');
+  const mapFloatingBtn = document.getElementById('mapFloatingGameBtn');
+  const mobileGameBtn = document.getElementById('mobileGameBtn');
   const closeBtn = document.getElementById('closeGameBtn');
   const restartBtn = document.getElementById('restartGameBtn');
   const modal = document.getElementById('gameModal');
@@ -1431,7 +1432,8 @@ function initMiniGame() {
   }
 
   if (openBtn) openBtn.addEventListener('click', openGame);
-  if (mapOpenBtn) mapOpenBtn.addEventListener('click', openGame);
+  if (mapFloatingBtn) mapFloatingBtn.addEventListener('click', openGame);
+  if (mobileGameBtn) mobileGameBtn.addEventListener('click', openGame);
   if (closeBtn) closeBtn.addEventListener('click', closeGame);
 
   if (restartBtn) {
