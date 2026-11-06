@@ -881,6 +881,214 @@ input:focus, select:focus, textarea:focus {
   color: #ffa502 !important;
 }
 
+/* Mini-Game Sidebar Widget & Map Chip */
+.chip-game {
+  background: linear-gradient(135deg, rgba(162, 155, 254, 0.25) 0%, rgba(253, 121, 168, 0.25) 100%) !important;
+  border-color: #a29bfe !important;
+  color: #fd79a8 !important;
+  font-weight: 800 !important;
+}
+.chip-game:hover {
+  border-color: #fd79a8 !important;
+  color: #fff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(253, 121, 168, 0.4);
+}
+
+.game-card-widget {
+  background: linear-gradient(145deg, rgba(108, 92, 231, 0.15) 0%, rgba(253, 121, 168, 0.15) 100%);
+  border: 1px solid rgba(162, 155, 254, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.15);
+}
+
+.game-card-info {
+  flex: 1;
+}
+
+.game-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: rgba(162, 155, 254, 0.2);
+  color: #a29bfe;
+  border: 1px solid rgba(162, 155, 254, 0.4);
+  padding: 1px 7px;
+  border-radius: 10px;
+  margin-bottom: 4px;
+}
+
+.game-card-widget h4 {
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  color: #fff;
+  margin-bottom: 3px;
+}
+
+.game-card-widget p {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.btn-game {
+  background: linear-gradient(135deg, #6c5ce7 0%, #fd79a8 100%);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(108, 92, 231, 0.4);
+}
+.btn-game:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(253, 121, 168, 0.6);
+}
+
+/* Game Modal Styles */
+.game-modal-card {
+  max-width: 680px;
+  background: #10141b;
+  border: 1px solid #30363d;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+  padding: 20px;
+}
+
+.game-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.game-header-title h3 {
+  font-size: 1.05rem;
+  color: #fff;
+  font-family: var(--font-heading);
+}
+
+.game-record-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(255, 165, 2, 0.2);
+  color: #ffa502;
+  border: 1px solid rgba(255, 165, 2, 0.4);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.game-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 640 / 280;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #0d1117;
+  border: 2px solid #30363d;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.8);
+  margin: 12px 0;
+  user-select: none;
+  touch-action: none;
+}
+
+#gameCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.game-overlay-msg {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 17, 23, 0.88);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  z-index: 20;
+}
+
+.game-start-content, .game-over-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: modal-pop 0.25s ease;
+}
+
+.game-hero-preview {
+  font-size: 2.4rem;
+  letter-spacing: 4px;
+}
+
+.game-overlay-msg h3 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  color: #fff;
+}
+
+.game-overlay-msg p {
+  font-size: 0.84rem;
+  color: #c9d1d9;
+  max-width: 380px;
+}
+
+.game-over-verdict {
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--accent-amber);
+  background: rgba(255, 165, 2, 0.1);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 165, 2, 0.3);
+}
+
+.btn-lg {
+  padding: 10px 24px;
+  font-size: 0.95rem;
+}
+
+.game-controls-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.game-footer-hud {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: rgba(22, 27, 34, 0.7);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+
+.hud-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+.hud-label {
+  color: var(--text-muted);
+}
+
+.hud-val {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  color: #fff;
+}
+
 /* Custom Route Tooltip */
 .custom-route-tooltip {
   background: #161b22 !important;
