@@ -543,35 +543,44 @@ body {
 }
 
 .dimas-avatar {
-  position: relative;
-  font-size: 28px;
-  width: 44px;
-  height: 44px;
-  background: #0d1117;
+  font-size: 24px;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  background: radial-gradient(circle, #1a2736 0%, #0d1117 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px solid #58a6ff;
-}
-
-.dog-chaser {
-  position: absolute;
-  bottom: -6px;
-  right: -10px;
-  font-size: 16px;
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.35);
+  user-select: none;
 }
 
 .dimas-info {
   flex: 1;
+  min-width: 0;
 }
 
 .dimas-name-line {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   font-size: 0.78rem;
   margin-bottom: 5px;
+  gap: 6px;
+}
+
+.dimas-name {
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.chase-emojis {
+  font-size: 0.75rem;
+  opacity: 0.88;
+  letter-spacing: 1px;
 }
 
 .hp-text {

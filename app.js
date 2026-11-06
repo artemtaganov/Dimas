@@ -61,6 +61,24 @@ class SoundFX {
         this.ctx = new AudioContext();
       }
     }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+  }
+
+  unlock() {
+    this.init();
+    if (!this.ctx) return;
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+    try {
+      const buffer = this.ctx.createBuffer(1, 1, 22050);
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.ctx.destination);
+      source.start(0);
+    } catch (e) {}
   }
 
   playBark() {
@@ -92,9 +110,10 @@ class SoundFX {
     // Double bark echo
     setTimeout(() => {
       if (!this.enabled || !this.ctx) return;
-      const t = ctx.currentTime;
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
+      this.init();
+      const t = this.ctx.currentTime;
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
       osc2.type = 'sawtooth';
       osc2.frequency.setValueAtTime(160, t);
       osc2.frequency.exponentialRampToValueAtTime(350, t + 0.04);
@@ -104,7 +123,7 @@ class SoundFX {
       gain2.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
 
       osc2.connect(gain2);
-      gain2.connect(ctx.destination);
+      gain2.connect(this.ctx.destination);
       osc2.start(t);
       osc2.stop(t + 0.2);
     }, 120);
@@ -579,6 +598,14 @@ function closeModal() {
 
 // Setup Event Listeners
 function setupEvents() {
+  // Mobile Web Audio unlock on first touch / click
+  const unlockMobileAudio = () => {
+    sound.unlock();
+  };
+  ['touchstart', 'touchend', 'pointerdown', 'click'].forEach(evt => {
+    document.addEventListener(evt, unlockMobileAudio, { passive: true, once: true });
+  });
+
   // Sound toggle button (desktop & mobile)
   const soundBtn = document.getElementById('soundToggleBtn');
   const soundIcon = document.getElementById('soundIcon');
@@ -587,6 +614,7 @@ function setupEvents() {
   const mobileSoundIcon = document.getElementById('mobileSoundIcon');
 
   function toggleSoundState() {
+    sound.unlock();
     sound.enabled = !sound.enabled;
     const icon = sound.enabled ? '🔊' : '🔇';
     const text = sound.enabled ? 'ВКЛ' : 'ВЫКЛ';
