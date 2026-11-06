@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Где Димаса кусали псины 🐕🇨🇱 | Интерактивная карта</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%20width=%22100%22%20height=%22100%22><text y=%22.9em%22 font-size=%2290%22>🐕</text></svg>">
+  
+  <!-- Leaflet CSS (Local with CDN fallback) -->
+  <link rel="stylesheet" href="vendor/leaflet.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Rubik:ital,wght@0,400;0,500;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Bar / Header -->
+    <header class="main-header">
+      <div class="logo-area">
+        <div class="logo-icon-wrapper">
+          <span class="logo-dog">🐕</span>
+          <span class="logo-bite">💥</span>
+        </div>
+        <div class="logo-titles">
+          <h1>ГДЕ ДИМАСА КУСАЛИ ПСИНЫ</h1>
+          <p class="subtitle">Интерактивный атлас боевых шрамов, бегства на первой космической и порванных штанин</p>
+        </div>
+      </div>
+
+      <!-- Action & Sound buttons -->
+      <div class="header-actions">
+        <button id="soundToggleBtn" class="btn btn-secondary sound-header-btn" title="Включить / выключить боевые звуки">
+          <span id="soundIcon">🔊</span> <span class="hide-mobile">Звуки: <span id="soundStatusText">ВКЛ</span></span>
+        </button>
+        <button id="addBiteBtn" class="btn btn-danger desktop-add-btn">
+          <span class="btn-icon">🚨</span> <span>Сообщить об укусе</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content: Sidebar + Map -->
+    <div class="workspace">
+      <!-- Sidebar / Incident List & Stats -->
+      <aside class="sidebar" id="appSidebar">
+        <!-- Mobile Handle & Header -->
+        <div class="sidebar-mobile-handle">
+          <div class="handle-bar"></div>
+          <div class="sidebar-mobile-header">
+            <span>📋 СВОДКА И ТОЧКИ НАПАДЕНИЙ</span>
+            <button id="closeSidebarBtn" class="btn btn-sm btn-secondary">✕ Закрыть</button>
+          </div>
+        </div>
+
+        <!-- Stats widget -->
+        <div class="stats-panel card">
+          <div class="stats-title">
+            <span>📊</span> СВОДКА БОЕВЫХ ПОТЕРЬ
+          </div>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <span class="stat-number text-danger" id="totalIncidentsCount">2</span>
+              <span class="stat-label">Подтверждённых нападения</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-number text-warning">34 <small>км/ч</small></span>
+              <span class="stat-label">Рекорд скорости бегства</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-number text-accent">1</span>
+              <span class="stat-label">Пострадавшая штанина</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-number text-safe">100%</span>
+              <span class="stat-label">Чилийского адреналина</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter / Tabs -->
+        <div class="panel-section-header">
+          <h3>📍 Горячие точки Чили</h3>
+          <span class="hint-text">Кликните, чтобы переместиться</span>
+        </div>
+
+        <!-- Incidents List -->
+        <div class="incident-list" id="incidentList">
+          <!-- Rendered via JS -->
+        </div>
+
+        <!-- Survival Tips / Funny Footer in Sidebar -->
+        <div class="card tips-card">
+          <h4>💡 Чилийский собачий лайфхак</h4>
+          <p>Если чилийская прибрежная собака (Quiltro) бежит на тебя — притворись, что ты местный серфер, или громко кричи <em>«¡Tranquilo, perrito!»</em>. Если не помогло — включай режим Димаса.</p>
+        </div>
+      </aside>
+
+      <!-- Map Container -->
+      <main class="map-wrapper">
+        <div id="map"></div>
+
+        <!-- Floating Quick Tools -->
+        <div class="map-floating-overlay">
+          <div class="active-mode-banner" id="addModeBanner" style="display: none;">
+            <span>🎯 <strong>Режим фиксации:</strong> Кликните по карте в месте нападения пса!</span>
+            <button class="btn btn-sm btn-dark" id="cancelAddBtn">Отмена</button>
+          </div>
+
+          <div class="quick-locations">
+            <button class="quick-loc-chip chip-base" data-id="santiago_base">
+              🏰 Santiago, El Quisco 3260
+            </button>
+            <button class="quick-loc-chip" data-id="pupuya">
+              🐶 Pupuya
+            </button>
+            <button class="quick-loc-chip" data-id="pichilemu">
+              🏄‍♂️ Pichilemu
+            </button>
+            <button class="quick-loc-chip chip-all" data-action="fit-all">
+              🔍 Все локации
+            </button>
+          </div>
+        </div>
+
+        <!-- Dimas Health Bar (Joke) -->
+        <div class="dimas-status-bar">
+          <div class="dimas-avatar">
+            🏃‍♂️
+            <span class="dog-chaser">🐕💨</span>
+          </div>
+          <div class="dimas-info">
+            <div class="dimas-name-line">
+              <strong>Димас (Боец с прибрежными псами)</strong>
+              <span class="hp-text">HP: 85/100</span>
+            </div>
+            <div class="health-bar-bg">
+              <div class="health-bar-fill" style="width: 85%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Floating Bottom Controls -->
+        <nav class="mobile-bottom-bar">
+          <button id="mobileViewListBtn" class="mobile-tab-btn" title="Показать хронику инцидентов">
+            <span class="tab-icon">📋</span>
+            <span class="tab-label">Хроника</span>
+          </button>
+          <button id="mobileFitAllBtn" class="mobile-tab-btn" title="Показать всю карту">
+            <span class="tab-icon">🗺️</span>
+            <span class="tab-label">Вся карта</span>
+          </button>
+          <button id="mobileAddBiteBtn" class="mobile-tab-btn text-danger-tab" title="Сообщить об укусе">
+            <span class="tab-icon">🚨</span>
+            <span class="tab-label">+ Укус</span>
+          </button>
+          <button id="mobileSoundBtn" class="mobile-tab-btn" title="Переключить звук">
+            <span class="tab-icon" id="mobileSoundIcon">🔊</span>
+            <span class="tab-label">Звук</span>
+          </button>
+        </nav>
+      </main>
+
+      <!-- Sidebar Backdrop on Mobile -->
+      <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Add New Incident -->
+  <div class="modal-backdrop" id="incidentModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🚨 Зафиксировать новый укус Димаса</h3>
+        <button class="close-btn" id="closeModalBtn">&times;</button>
+      </div>
+      <form id="incidentForm">
+        <div class="form-group">
+          <label>Локация / Ориентир</label>
+          <input type="text" id="locNameInput" required placeholder="Например: Пляж Ла Пунта, тропа к кактусам...">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Кличка или порода псины</label>
+            <input type="text" id="dogNameInput" required placeholder="Например: Лютый Барбос, Эль Кусало">
+          </div>
+          <div class="form-group">
+            <label>Уровень свирепости псины (1-5)</label>
+            <select id="dangerLevelInput">
+              <option value="1">⭐ 1/5 — Просто грозно гавкнул</option>
+              <option value="2">⭐⭐ 2/5 — Прикусил кроссовок</option>
+              <option value="3" selected>⭐⭐⭐ 3/5 — Прокусил джинсы</option>
+              <option value="4">⭐⭐⭐⭐ 4/5 — Загнал Димаса на столб</option>
+              <option value="5">⭐⭐⭐⭐⭐ 5/5 — Режим Цербера Чили</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Скорость спринта Димаса</label>
+            <input type="text" id="speedInput" placeholder="Например: 38 км/ч">
+          </div>
+          <div class="form-group">
+            <label>Урон / Потери</label>
+            <input type="text" id="damageInput" placeholder="Например: -20 HP, порван носок">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Что произошло (история инцидента)</label>
+          <textarea id="storyInput" rows="3" placeholder="Опишите, как псина напала из засады и с какими криками Димас отступал..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancelModalBtn">Отмена</button>
+          <button type="submit" class="btn btn-danger">🔥 Сохранить инцидент</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Audio elements generated via Web Audio API -->
+  <!-- Leaflet JS (Local with CDN fallback) -->
+  <script src="vendor/leaflet.js"></script>
+  <script>
+    if (typeof L === 'undefined') {
+      document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>');
+    }
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>
+
