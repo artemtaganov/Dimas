@@ -47,11 +47,24 @@ const INITIAL_INCIDENTS = [
   }
 ];
 
-// Audio FX synthesizer (Web Audio API)
+// Audio Engine (HTML5 Audio with Web Audio API fallback)
 class SoundFX {
   constructor() {
-    this.ctx = null;
     this.enabled = true;
+    this.audioPool = {};
+    this.ctx = null;
+    this.initAudioElements();
+  }
+
+  initAudioElements() {
+    const sounds = ['bark', 'jump', 'coin', 'bite'];
+    sounds.forEach(name => {
+      try {
+        const audio = new Audio(`vendor/sounds/${name}.wav`);
+        audio.preload = 'auto';
+        this.audioPool[name] = audio;
+      } catch (e) {}
+    });
   }
 
   init() {
@@ -68,165 +81,104 @@ class SoundFX {
 
   unlock() {
     this.init();
-    if (!this.ctx) return;
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
-    }
+    // Warm up audio elements
+    Object.values(this.audioPool).forEach(a => {
+      try {
+        a.load();
+      } catch (e) {}
+    });
+  }
+
+  play(name) {
+    if (!this.enabled) return;
+    this.unlock();
+
+    // 1. Try HTML5 Audio (Guaranteed to work on Mobile)
+    let played = false;
     try {
-      const buffer = this.ctx.createBuffer(1, 1, 22050);
-      const source = this.ctx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(this.ctx.destination);
-      source.start(0);
+      const baseAudio = this.audioPool[name];
+      if (baseAudio) {
+        const sound = baseAudio.cloneNode();
+        sound.volume = 0.85;
+        const promise = sound.play();
+        if (promise !== undefined) {
+          promise.then(() => { played = true; }).catch(() => {
+            this.playSynth(name);
+          });
+          return;
+        }
+      }
     } catch (e) {}
+
+    if (!played) {
+      this.playSynth(name);
+    }
   }
 
-  playBark() {
-    if (!this.enabled) return;
+  playSynth(name) {
     this.init();
     if (!this.ctx) return;
-
-    const ctx = this.ctx;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sawtooth';
-    const now = ctx.currentTime;
-
-    // Dog bark pitch envelope
-    osc.frequency.setValueAtTime(140, now);
-    osc.frequency.exponentialRampToValueAtTime(320, now + 0.05);
-    osc.frequency.exponentialRampToValueAtTime(80, now + 0.18);
-
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + 0.22);
-
-    // Double bark echo
-    setTimeout(() => {
-      if (!this.enabled || !this.ctx) return;
-      this.init();
-      const t = this.ctx.currentTime;
-      const osc2 = this.ctx.createOscillator();
-      const gain2 = this.ctx.createGain();
-      osc2.type = 'sawtooth';
-      osc2.frequency.setValueAtTime(160, t);
-      osc2.frequency.exponentialRampToValueAtTime(350, t + 0.04);
-      osc2.frequency.exponentialRampToValueAtTime(90, t + 0.16);
-
-      gain2.gain.setValueAtTime(0.35, t);
-      gain2.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
-
-      osc2.connect(gain2);
-      gain2.connect(this.ctx.destination);
-      osc2.start(t);
-      osc2.stop(t + 0.2);
-    }, 120);
-  }
-
-  playBite() {
-    if (!this.enabled) return;
-    this.init();
-    if (!this.ctx) return;
-
     const ctx = this.ctx;
     const now = ctx.currentTime;
-    
-    // Snapping sound
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(450, now);
-    osc.frequency.exponentialRampToValueAtTime(50, now + 0.12);
 
-    gain.gain.setValueAtTime(0.4, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.14);
+    if (name === 'bark') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(320, now + 0.05);
+      osc.frequency.exponentialRampToValueAtTime(80, now + 0.18);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.22);
+    } else if (name === 'jump') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(620, now + 0.14);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.16);
+    } else if (name === 'coin') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(587, now);
+      osc.frequency.setValueAtTime(880, now + 0.08);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.22);
+    } else if (name === 'bite') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(450, now);
+      osc.frequency.exponentialRampToValueAtTime(50, now + 0.12);
+      gain.gain.setValueAtTime(0.4, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.14);
+    }
   }
 
-  playSiren() {
-    if (!this.enabled) return;
-    this.init();
-    if (!this.ctx) return;
-
-    const ctx = this.ctx;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(600, now);
-    osc.frequency.linearRampToValueAtTime(900, now + 0.25);
-    osc.frequency.linearRampToValueAtTime(600, now + 0.5);
-
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.55);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.55);
-  }
-
-  playJump() {
-    if (!this.enabled) return;
-    this.init();
-    if (!this.ctx) return;
-
-    const ctx = this.ctx;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(220, now);
-    osc.frequency.exponentialRampToValueAtTime(620, now + 0.14);
-
-    gain.gain.setValueAtTime(0.22, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.16);
-  }
-
-  playCoin() {
-    if (!this.enabled) return;
-    this.init();
-    if (!this.ctx) return;
-
-    const ctx = this.ctx;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(587, now);
-    osc.frequency.setValueAtTime(880, now + 0.08);
-
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.22);
-  }
-
-  playCrash() {
-    this.playBark();
-    this.playBite();
-  }
+  playBark() { this.play('bark'); }
+  playJump() { this.play('jump'); }
+  playCoin() { this.play('coin'); }
+  playBite() { this.play('bite'); }
+  playCrash() { this.play('bark'); }
+  playSiren() { this.play('bark'); }
 }
 
 // App State
