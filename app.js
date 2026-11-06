@@ -699,9 +699,9 @@ class BeachRunner {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.width = canvas.width;
-    this.height = canvas.height;
-    this.groundY = this.height - 42;
+    this.width = canvas.width || 640;
+    this.height = canvas.height || 270;
+    this.groundY = this.height - 40;
 
     this.state = 'idle'; // 'idle', 'running', 'gameover'
     this.distance = 0;
@@ -709,55 +709,71 @@ class BeachRunner {
     this.pantsHp = 100;
     this.highScore = parseInt(localStorage.getItem('dimas_game_highscore') || '0', 10);
 
-    this.speed = 4.8;
-    this.gameSpeed = 4.8;
+    this.speed = 5.2;
+    this.gameSpeed = 5.2;
     this.animFrame = null;
+    this.isRunningLoop = false;
 
     // Player (Dimas)
     this.player = {
-      x: 160,
-      y: this.groundY - 38,
-      width: 32,
-      height: 38,
+      x: 180,
+      y: this.groundY - 42,
+      width: 36,
+      height: 44,
       vy: 0,
       jumpCount: 0,
       maxJumps: 2,
       isGrounded: true,
-      runFrame: 0,
-      sweatTimer: 0
+      legCycle: 0
     };
 
     // Chaser (Quiltro Dog)
     this.dog = {
-      x: 40,
-      y: this.groundY - 30,
-      width: 34,
-      height: 28,
-      targetX: 45,
-      runFrame: 0,
-      barkTimer: 0
+      x: 50,
+      y: this.groundY - 32,
+      width: 38,
+      height: 30,
+      targetX: 55,
+      legCycle: 0
     };
 
     this.obstacles = [];
     this.collectibles = [];
     this.particles = [];
     this.clouds = [
-      { x: 50, y: 35, speed: 0.4, size: 28 },
-      { x: 280, y: 55, speed: 0.6, size: 36 },
-      { x: 500, y: 30, speed: 0.5, size: 32 }
+      { x: 40, y: 30, speed: 0.4, size: 30 },
+      { x: 260, y: 48, speed: 0.6, size: 38 },
+      { x: 480, y: 25, speed: 0.5, size: 32 }
     ];
 
     this.spawnTimer = 0;
     this.collectibleTimer = 0;
+    this.idleTimer = 0;
     this.shoutTimer = 0;
     this.shoutText = '';
 
+    this.loop = this.loop.bind(this);
     this.setupInput();
   }
 
+  initCanvas() {
+    const rect = this.canvas.getBoundingClientRect();
+    const w = rect.width > 50 ? Math.floor(rect.width) : 640;
+    const h = rect.height > 50 ? Math.floor(rect.height) : 270;
+
+    this.canvas.width = w;
+    this.canvas.height = h;
+    this.width = w;
+    this.height = h;
+    this.groundY = this.height - 40;
+
+    this.player.y = this.groundY - this.player.height;
+    this.dog.y = this.groundY - this.dog.height;
+  }
+
   setupInput() {
-    // Jump trigger
     this.jumpHandler = (e) => {
+      if (e && e.preventDefault) e.preventDefault();
       if (this.state === 'running') {
         this.jump();
       } else if (this.state === 'idle' || this.state === 'gameover') {
@@ -779,24 +795,34 @@ class BeachRunner {
       e.preventDefault();
       this.jumpHandler(e);
     });
+
+    const jumpBtn = document.getElementById('mobileJumpBtn');
+    if (jumpBtn) {
+      jumpBtn.addEventListener('click', (e) => {
+        this.jumpHandler(e);
+      });
+      jumpBtn.addEventListener('pointerdown', (e) => {
+        this.jumpHandler(e);
+      });
+    }
   }
 
   jump() {
     if (this.player.jumpCount < this.player.maxJumps) {
-      this.player.vy = -10.5;
+      this.player.vy = -11.2;
       this.player.jumpCount++;
       this.player.isGrounded = false;
       sound.playJump();
 
-      // Jump dust
-      for (let i = 0; i < 4; i++) {
+      // Jump dust particles
+      for (let i = 0; i < 5; i++) {
         this.particles.push({
-          x: this.player.x + 8,
+          x: this.player.x + 16,
           y: this.groundY - 2,
-          vx: (Math.random() - 0.5) * 3 - 2,
+          vx: (Math.random() - 0.5) * 4 - 2,
           vy: -Math.random() * 2,
           size: Math.random() * 4 + 2,
-          color: '#e0af68',
+          color: '#e58e26',
           life: 18
         });
       }
@@ -808,24 +834,33 @@ class BeachRunner {
     this.distance = 0;
     this.coins = 0;
     this.pantsHp = 100;
-    this.gameSpeed = 4.8;
+    this.gameSpeed = 5.2;
     this.obstacles = [];
     this.collectibles = [];
     this.particles = [];
-    this.spawnTimer = 40;
-    this.dog.x = 45;
-    this.dog.targetX = 45;
+    this.spawnTimer = 45;
+    this.dog.x = 55;
+    this.dog.targetX = 55;
 
-    document.getElementById('gameOverlayMsg').style.display = 'none';
-    document.getElementById('gameStartScreen').style.display = 'none';
-    document.getElementById('gameOverScreen').style.display = 'none';
+    const overlay = document.getElementById('gameOverlayMsg');
+    if (overlay) overlay.style.display = 'none';
 
     this.updateHUD();
     sound.playBark();
+  }
 
-    if (!this.animFrame) {
-      this.loop = this.loop.bind(this);
+  startLoop() {
+    if (!this.isRunningLoop) {
+      this.isRunningLoop = true;
       this.animFrame = requestAnimationFrame(this.loop);
+    }
+  }
+
+  stopLoop() {
+    this.isRunningLoop = false;
+    if (this.animFrame) {
+      cancelAnimationFrame(this.animFrame);
+      this.animFrame = null;
     }
   }
 
@@ -841,8 +876,10 @@ class BeachRunner {
     const highScoreEl = document.getElementById('gameHighScore');
     if (highScoreEl) highScoreEl.textContent = this.highScore;
 
-    document.getElementById('gameOverStats').textContent = 
-      `Димас пробежал: ${Math.floor(this.distance)} м • Съедено эмпанадас: ${this.coins} 🥟`;
+    const statsEl = document.getElementById('gameOverStats');
+    if (statsEl) {
+      statsEl.textContent = `Димас пробежал: ${Math.floor(this.distance)} м • Съедено эмпанадас: ${this.coins} 🥟`;
+    }
 
     const verdicts = [
       '«Штаны спасти не удалось, но скорость бега была космической!»',
@@ -850,12 +887,13 @@ class BeachRunner {
       '«Спринтерский рывок года! Чили аплодирует стоя!»',
       '«Псина включила режим перехватчика и настигла добычу!»'
     ];
-    document.getElementById('gameOverVerdict').textContent = 
-      verdicts[Math.floor(Math.random() * verdicts.length)];
+    const verdictEl = document.getElementById('gameOverVerdict');
+    if (verdictEl) {
+      verdictEl.textContent = verdicts[Math.floor(Math.random() * verdicts.length)];
+    }
 
-    document.getElementById('gameOverlayMsg').style.display = 'flex';
-    document.getElementById('gameStartScreen').style.display = 'none';
-    document.getElementById('gameOverScreen').style.display = 'flex';
+    const overlay = document.getElementById('gameOverlayMsg');
+    if (overlay) overlay.style.display = 'flex';
   }
 
   updateHUD() {
@@ -871,22 +909,32 @@ class BeachRunner {
   }
 
   loop() {
-    if (this.state === 'running') {
-      this.update();
-    }
-    this.render();
+    if (!this.isRunningLoop) return;
 
+    if (this.state === 'running') {
+      this.updateRunning();
+    } else {
+      this.updateIdle();
+    }
+
+    this.render();
     this.animFrame = requestAnimationFrame(this.loop);
   }
 
-  update() {
-    // Increase distance and difficulty
-    this.distance += this.gameSpeed * 0.05;
-    this.gameSpeed = Math.min(10.5, 4.8 + this.distance * 0.007);
+  updateIdle() {
+    this.idleTimer++;
+    // Subtle bounce on idle
+    this.player.legCycle += 0.15;
+    this.dog.legCycle += 0.15;
+  }
+
+  updateRunning() {
+    this.distance += this.gameSpeed * 0.055;
+    this.gameSpeed = Math.min(11, 5.2 + this.distance * 0.007);
     this.updateHUD();
 
-    // Gravity & Jump Physics
-    this.player.vy += 0.58; // Gravity
+    // Gravity
+    this.player.vy += 0.62;
     this.player.y += this.player.vy;
 
     if (this.player.y >= this.groundY - this.player.height) {
@@ -896,70 +944,66 @@ class BeachRunner {
       this.player.isGrounded = true;
     }
 
-    // Run animation frames
-    this.player.runFrame += 0.25;
-    this.dog.runFrame += 0.3;
+    this.player.legCycle += 0.28;
+    this.dog.legCycle += 0.32;
 
     // Dog position catch-up logic
-    if (this.dog.targetX > 45) {
-      this.dog.targetX -= 0.15; // Slowly fallback if safe
+    if (this.dog.targetX > 55) {
+      this.dog.targetX -= 0.15;
     }
     this.dog.x += (this.dog.targetX - this.dog.x) * 0.08;
 
-    // Shouting jokes
+    // Shouts
     this.shoutTimer++;
-    if (this.shoutTimer > 180) {
+    if (this.shoutTimer > 160) {
       this.shoutTimer = 0;
       const shouts = ['¡Tranquilo, perrito!', '39 км/ч!', 'Спасите штаны!', 'Беги, Димас!'];
       this.shoutText = shouts[Math.floor(Math.random() * shouts.length)];
     }
 
-    // Spawn Obstacles (Cactus, Crab, Surfboard)
+    // Spawn Obstacles
     this.spawnTimer--;
     if (this.spawnTimer <= 0) {
       const types = [
-        { type: 'cactus', emoji: '🌵', w: 26, h: 36, yOff: 36 },
-        { type: 'crab', emoji: '🦀', w: 28, h: 22, yOff: 22 },
-        { type: 'board', emoji: '🏄‍♂️', w: 32, h: 30, yOff: 30 }
+        { type: 'cactus', w: 26, h: 36, yOff: 36 },
+        { type: 'crab', w: 28, h: 22, yOff: 22 },
+        { type: 'board', w: 34, h: 32, yOff: 32 }
       ];
       const chosen = types[Math.floor(Math.random() * types.length)];
       this.obstacles.push({
-        x: this.width + 20,
+        type: chosen.type,
+        x: this.width + 30,
         y: this.groundY - chosen.yOff,
         w: chosen.w,
-        h: chosen.h,
-        emoji: chosen.emoji
+        h: chosen.h
       });
-      // Spawn interval based on current speed
-      this.spawnTimer = Math.floor(Math.random() * 45 + 55 / (this.gameSpeed / 4.8));
+      this.spawnTimer = Math.floor(Math.random() * 40 + 55 / (this.gameSpeed / 5.2));
     }
 
-    // Spawn Collectibles (Empanadas)
+    // Spawn Empanadas
     this.collectibleTimer--;
     if (this.collectibleTimer <= 0) {
       this.collectibles.push({
-        x: this.width + 30,
+        x: this.width + 40,
         y: this.groundY - Math.random() * 65 - 35,
         w: 24,
-        h: 24,
-        emoji: '🥟'
+        h: 24
       });
-      this.collectibleTimer = Math.floor(Math.random() * 120 + 90);
+      this.collectibleTimer = Math.floor(Math.random() * 110 + 80);
     }
 
-    // Move & collide obstacles
+    // Collide obstacles
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obs = this.obstacles[i];
       obs.x -= this.gameSpeed;
 
-      // Check collision with player
       if (this.checkCollision(this.player, obs)) {
         this.obstacles.splice(i, 1);
         this.pantsHp -= 35;
-        this.dog.targetX += 38; // Dog lunges closer!
+        this.dog.targetX += 38;
         sound.playBark();
 
-        // Hit particles
+        // Blood / dust burst
         for (let p = 0; p < 8; p++) {
           this.particles.push({
             x: this.player.x + 16,
@@ -972,7 +1016,7 @@ class BeachRunner {
           });
         }
 
-        if (this.pantsHp <= 0 || this.dog.x >= this.player.x - 20) {
+        if (this.pantsHp <= 0 || this.dog.x >= this.player.x - 24) {
           this.gameOver();
           return;
         }
@@ -984,7 +1028,7 @@ class BeachRunner {
       }
     }
 
-    // Move & collect items
+    // Collect items
     for (let i = this.collectibles.length - 1; i >= 0; i--) {
       const item = this.collectibles[i];
       item.x -= this.gameSpeed;
@@ -992,10 +1036,9 @@ class BeachRunner {
       if (this.checkCollision(this.player, item)) {
         this.collectibles.splice(i, 1);
         this.coins++;
-        this.distance += 25; // Bonus boost!
+        this.distance += 25;
         sound.playCoin();
 
-        // Sparkle particles
         for (let p = 0; p < 6; p++) {
           this.particles.push({
             x: item.x,
@@ -1015,7 +1058,7 @@ class BeachRunner {
       }
     }
 
-    // Move particles
+    // Particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.x += p.vx;
@@ -1042,7 +1085,7 @@ class BeachRunner {
     const w = this.width;
     const h = this.height;
 
-    // 1. Sky & Chilean Sunset Gradient
+    // 1. Sky & Sunset Gradient
     const skyGrad = ctx.createLinearGradient(0, 0, 0, this.groundY);
     skyGrad.addColorStop(0, '#2d142c');
     skyGrad.addColorStop(0.35, '#801336');
@@ -1054,13 +1097,13 @@ class BeachRunner {
     // 2. Setting Sun
     ctx.fillStyle = '#f9ca24';
     ctx.beginPath();
-    ctx.arc(w * 0.72, h * 0.45, 34, 0, Math.PI * 2);
+    ctx.arc(w * 0.72, h * 0.42, 34, 0, Math.PI * 2);
     ctx.fill();
 
     // 3. Clouds
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
     this.clouds.forEach(c => {
-      c.x -= c.speed;
+      if (this.state === 'running') c.x -= c.speed;
       if (c.x < -60) c.x = w + 40;
       ctx.beginPath();
       ctx.arc(c.x, c.y, c.size * 0.5, 0, Math.PI * 2);
@@ -1069,7 +1112,7 @@ class BeachRunner {
       ctx.fill();
     });
 
-    // 4. Distant Coastal Cliffs
+    // 4. Coastal Mountains
     ctx.fillStyle = '#511845';
     ctx.beginPath();
     ctx.moveTo(0, this.groundY - 35);
@@ -1085,7 +1128,8 @@ class BeachRunner {
     ctx.fillStyle = '#1e3799';
     ctx.fillRect(0, this.groundY - 24, w, 24);
 
-    const waveOffset = (Date.now() * 0.003 * this.gameSpeed) % 40;
+    const waveSpeed = this.state === 'running' ? this.gameSpeed : 2;
+    const waveOffset = (Date.now() * 0.003 * waveSpeed) % 40;
     ctx.fillStyle = '#4a69bd';
     ctx.beginPath();
     for (let x = -40; x < w + 40; x += 30) {
@@ -1108,56 +1152,64 @@ class BeachRunner {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
     const streakOffset = (this.distance * 12) % 60;
     for (let x = -60; x < w + 60; x += 55) {
-      ctx.fillRect(x - streakOffset, this.groundY + 14, 18, 3);
-      ctx.fillRect(x - streakOffset + 25, this.groundY + 26, 12, 2.5);
+      ctx.fillRect(x - streakOffset, this.groundY + 12, 18, 3);
+      ctx.fillRect(x - streakOffset + 25, this.groundY + 24, 12, 2.5);
     }
 
     // 7. Collectibles (Empanadas)
-    ctx.font = '24px sans-serif';
-    ctx.textAlign = 'center';
     this.collectibles.forEach(item => {
-      ctx.fillText(item.emoji, item.x + item.w / 2, item.y + item.h);
+      // Golden Empanada graphic
+      ctx.save();
+      ctx.translate(item.x + item.w / 2, item.y + item.h / 2);
+      ctx.fillStyle = '#f39c12';
+      ctx.beginPath();
+      ctx.arc(0, 0, 12, Math.PI, 0, false);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#d35400';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
     });
 
-    // 8. Obstacles (Cactus, Crab, Surfboard)
+    // 8. Obstacles
     this.obstacles.forEach(obs => {
-      ctx.font = `${obs.h * 0.9}px sans-serif`;
-      ctx.fillText(obs.emoji, obs.x + obs.w / 2, obs.y + obs.h - 2);
+      if (obs.type === 'cactus') {
+        // Cactus graphic
+        ctx.fillStyle = '#27ae60';
+        ctx.fillRect(obs.x + 8, obs.y + 4, 10, obs.h - 4);
+        ctx.fillRect(obs.x + 2, obs.y + 12, 8, 6);
+        ctx.fillRect(obs.x + 2, obs.y + 6, 6, 12);
+        ctx.fillRect(obs.x + 16, obs.y + 16, 8, 6);
+        ctx.fillRect(obs.x + 18, obs.y + 10, 6, 12);
+      } else if (obs.type === 'crab') {
+        // Crab graphic
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.ellipse(obs.x + 14, obs.y + 12, 12, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(obs.x + 2, obs.y + 4, 6, 6);
+        ctx.fillRect(obs.x + 20, obs.y + 4, 6, 6);
+      } else {
+        // Surfboard graphic
+        ctx.save();
+        ctx.translate(obs.x + 16, obs.y + 16);
+        ctx.rotate(-0.35);
+        ctx.fillStyle = '#00cec9';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 6, 18, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ff7675';
+        ctx.fillRect(-6, -4, 12, 8);
+        ctx.restore();
+      }
     });
 
     // 9. Quiltro Dog (Chaser)
-    ctx.save();
-    ctx.translate(this.dog.x, this.dog.y);
-    ctx.font = '32px sans-serif';
-    ctx.fillText('🐕', 16, 26);
-    // Smoke dust behind dog
-    ctx.font = '16px sans-serif';
-    ctx.fillText('💨', -8, 24);
-    ctx.restore();
+    this.drawDog(ctx);
 
     // 10. Dimas (Player)
-    ctx.save();
-    ctx.translate(this.player.x, this.player.y);
-
-    ctx.font = '36px sans-serif';
-    ctx.fillText('🏃‍♂️', 16, 34);
-
-    // Sweat drop when running
-    if (this.state === 'running') {
-      ctx.font = '14px sans-serif';
-      ctx.fillText('💦', 30, 8);
-    }
-
-    // Speech bubble
-    if (this.shoutText && this.state === 'running') {
-      ctx.font = 'bold 11px sans-serif';
-      ctx.fillStyle = 'rgba(0,0,0,0.75)';
-      ctx.fillRect(-15, -24, ctx.measureText(this.shoutText).width + 12, 18);
-      ctx.fillStyle = '#fff';
-      ctx.textAlign = 'left';
-      ctx.fillText(this.shoutText, -9, -11);
-    }
-    ctx.restore();
+    this.drawDimas(ctx);
 
     // 11. Particles
     this.particles.forEach(p => {
@@ -1166,6 +1218,155 @@ class BeachRunner {
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
     });
+
+    // 12. Idle Prompt Banner
+    if (this.state === 'idle') {
+      const pulse = Math.sin(this.idleTimer * 0.08) * 0.2 + 0.8;
+      ctx.save();
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.45 * pulse})`;
+      const boxW = Math.min(w - 40, 360);
+      ctx.fillRect((w - boxW) / 2, 40, boxW, 44);
+      ctx.strokeStyle = '#ffa502';
+      ctx.lineWidth = 2;
+      ctx.strokeRect((w - boxW) / 2, 40, boxW, 44);
+
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 15px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚡ ЖМИ ПРЫЖОК / ТАП ДЛЯ СТАРТА ⚡', w / 2, 68);
+      ctx.restore();
+    }
+  }
+
+  drawDimas(ctx) {
+    ctx.save();
+    ctx.translate(this.player.x, this.player.y);
+
+    const legAngle = this.player.isGrounded ? Math.sin(this.player.legCycle) * 0.6 : 0.8;
+
+    // Head
+    ctx.fillStyle = '#ffbe76';
+    ctx.beginPath();
+    ctx.arc(18, 10, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Red Headband
+    ctx.fillStyle = '#ff4757';
+    ctx.fillRect(10, 5, 16, 4);
+
+    // Sunglasses
+    ctx.fillStyle = '#2d3436';
+    ctx.fillRect(16, 8, 8, 4);
+
+    // Cyan Torso / Shirt
+    ctx.fillStyle = '#00cec9';
+    ctx.fillRect(12, 18, 12, 14);
+
+    // Legs & Blue Boardshorts
+    ctx.fillStyle = '#0984e3';
+    ctx.fillRect(11, 30, 14, 6);
+
+    // Running Legs
+    ctx.strokeStyle = '#ffbe76';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+
+    // Leg 1
+    ctx.beginPath();
+    ctx.moveTo(14, 34);
+    ctx.lineTo(14 + Math.sin(legAngle) * 10, 42);
+    ctx.stroke();
+
+    // Leg 2
+    ctx.beginPath();
+    ctx.moveTo(22, 34);
+    ctx.lineTo(22 - Math.sin(legAngle) * 10, 42);
+    ctx.stroke();
+
+    // Sweat drop
+    if (this.state === 'running') {
+      ctx.fillStyle = '#74b9ff';
+      ctx.beginPath();
+      ctx.arc(30, 8, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Shout speech bubble
+    if (this.shoutText && this.state === 'running') {
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      const textW = ctx.measureText(this.shoutText).width;
+      ctx.fillRect(-12, -22, textW + 12, 18);
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'left';
+      ctx.fillText(this.shoutText, -6, -9);
+    }
+
+    ctx.restore();
+  }
+
+  drawDog(ctx) {
+    ctx.save();
+    ctx.translate(this.dog.x, this.dog.y);
+
+    const legAngle = Math.sin(this.dog.legCycle) * 0.7;
+
+    // Dog Body
+    ctx.fillStyle = '#cd6133';
+    ctx.beginPath();
+    ctx.ellipse(18, 16, 14, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head
+    ctx.beginPath();
+    ctx.arc(28, 10, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Floppy Ear
+    ctx.fillStyle = '#833917';
+    ctx.beginPath();
+    ctx.ellipse(25, 12, 3, 6, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Snout & Teeth
+    ctx.fillStyle = '#cd6133';
+    ctx.fillRect(32, 8, 7, 6);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(35, 12, 3, 2); // Tooth!
+
+    // Collar
+    ctx.fillStyle = '#ff4757';
+    ctx.fillRect(23, 11, 4, 6);
+
+    // Wagging Tail
+    ctx.strokeStyle = '#cd6133';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(4, 14);
+    ctx.lineTo(-4 + Math.sin(this.dog.legCycle * 1.5) * 4, 6);
+    ctx.stroke();
+
+    // Running Paws
+    ctx.strokeStyle = '#833917';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(12, 22);
+    ctx.lineTo(12 + Math.sin(legAngle) * 8, 28);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(24, 22);
+    ctx.lineTo(24 - Math.sin(legAngle) * 8, 28);
+    ctx.stroke();
+
+    // Smoke trail behind dog
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.beginPath();
+    ctx.arc(-8, 20, 4, 0, Math.PI * 2);
+    ctx.arc(-16, 22, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
   }
 }
 
@@ -1180,31 +1381,30 @@ function initMiniGame() {
   const openBtn = document.getElementById('openGameBtn');
   const mapOpenBtn = document.getElementById('mapOpenGameBtn');
   const closeBtn = document.getElementById('closeGameBtn');
-  const startBtn = document.getElementById('startGameBtn');
   const restartBtn = document.getElementById('restartGameBtn');
   const modal = document.getElementById('gameModal');
 
   function openGame() {
     modal.classList.add('open');
     closeMobileSidebar();
-    beachGame.updateHUD();
-    beachGame.render();
+
+    // Re-init canvas size on visible modal and start 60FPS loop immediately
+    setTimeout(() => {
+      beachGame.initCanvas();
+      beachGame.updateHUD();
+      beachGame.startLoop();
+    }, 60);
   }
 
   function closeGame() {
     modal.classList.remove('open');
     beachGame.state = 'idle';
+    beachGame.stopLoop();
   }
 
   if (openBtn) openBtn.addEventListener('click', openGame);
   if (mapOpenBtn) mapOpenBtn.addEventListener('click', openGame);
   if (closeBtn) closeBtn.addEventListener('click', closeGame);
-
-  if (startBtn) {
-    startBtn.addEventListener('click', () => {
-      beachGame.start();
-    });
-  }
 
   if (restartBtn) {
     restartBtn.addEventListener('click', () => {

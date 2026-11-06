@@ -241,7 +241,7 @@
     <div class="modal-card game-modal-card">
       <div class="modal-header">
         <div class="game-header-title">
-          <h3>🏃‍♂️ Побег по пляжу: Димас vs. Quiltro 🐕💨</h3>
+          <h3>🏃‍♂️ Побег по пляжу от псины</h3>
           <span class="game-record-pill">🏆 Рекорд: <span id="gameHighScore">0</span> м</span>
         </div>
         <button class="close-btn" id="closeGameBtn">&times;</button>
@@ -249,22 +249,13 @@
 
       <div class="game-canvas-wrapper">
         <canvas id="gameCanvas" width="640" height="280"></canvas>
-        <div class="game-overlay-msg" id="gameOverlayMsg">
-          <div class="game-start-content" id="gameStartScreen">
-            <div class="game-hero-preview">🏃‍♂️💨 🌵 🐕⚡</div>
-            <h3>Готов к забегу по чилийскому пляжу?</h3>
-            <p>Жми прыжок, перепрыгивай кактусы и крабов! Подбирай эмпанадас 🥟!</p>
-            <button class="btn btn-danger btn-lg" id="startGameBtn">🔥 СТАРТ (Прыжок)</button>
-            <div class="game-controls-hint">
-              <span>⌨️ Пробел / Стрелка вверх / Клик</span> • <span>📱 Тап по экрану</span>
-            </div>
-          </div>
-          <div class="game-over-content" id="gameOverScreen" style="display: none;">
+        <div class="game-overlay-msg" id="gameOverlayMsg" style="display: none;">
+          <div class="game-over-content" id="gameOverScreen">
             <div class="game-hero-preview">💥 🐕🩸 🩳</div>
             <h3 class="text-danger">ПСИНА ДОГНАЛА ДИМАСА!</h3>
             <p id="gameOverStats">Димас пробежал: 0 м • Съедено эмпанадас: 0 🥟</p>
             <div class="game-over-verdict" id="gameOverVerdict">«Штаны спасти не удалось, но скорость была космической!»</div>
-            <button class="btn btn-danger btn-lg" id="restartGameBtn">🔄 Бежать снова (Пробел)</button>
+            <button class="btn btn-danger btn-lg" id="restartGameBtn">🔄 Бежать снова (Прыжок)</button>
           </div>
         </div>
       </div>
@@ -272,17 +263,22 @@
       <div class="game-footer-hud">
         <div class="hud-item">
           <span class="hud-label">Дистанция:</span>
-          <span class="hud-val" id="gameDistance">0 м</span>
+          <span class="hud-val text-warning" id="gameDistance">0 м</span>
         </div>
         <div class="hud-item">
           <span class="hud-label">Эмпанадас:</span>
-          <span class="hud-val text-warning" id="gameCoins">0 🥟</span>
+          <span class="hud-val text-accent" id="gameCoins">0 🥟</span>
         </div>
         <div class="hud-item">
-          <span class="hud-label">Запасные штаны:</span>
+          <span class="hud-label">Штаны:</span>
           <span class="hud-val text-safe" id="gamePants">100% 🩳</span>
         </div>
       </div>
+
+      <!-- Action Button for Jump & Start -->
+      <button id="mobileJumpBtn" class="btn btn-danger btn-block mobile-jump-btn">
+        🦘 ПРЫЖОК / СТАРТ (Пробел или Клик)
+      </button>
     </div>
   </div>
 
